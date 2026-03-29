@@ -4,12 +4,14 @@
 
 <script setup>
 import { onMounted } from 'vue'
-import { useStore } from 'vuex'
+import { useStore } from '@/store'
 
 const store = useStore()
 
 onMounted(() => {
-  store.dispatch('user/getInfo')
+  if (store.state.token) {
+    store.dispatch('user/getInfo')
+  }
 })
 </script>
 

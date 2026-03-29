@@ -21,6 +21,7 @@ export function getMenu() {
         title: '流程管理',
         icon: 'Connection',
         children: [
+          { path: '/workflow/designer', title: '流程设计', icon: 'Edit' },
           { path: '/workflow/definition', title: '流程定义', icon: 'FlowChart' },
           { path: '/workflow/instance', title: '流程实例', icon: 'Flow' },
           { path: '/workflow/task', title: '我的任务', icon: 'Ticket' }

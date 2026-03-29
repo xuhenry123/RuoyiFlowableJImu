@@ -74,6 +74,12 @@ const routes = [
     meta: { title: '流程管理', icon: 'Connection' },
     children: [
       {
+        path: '/workflow/designer',
+        name: 'Designer',
+        component: () => import('@/views/workflow/designer/index.vue'),
+        meta: { title: '流程设计', icon: 'Edit' }
+      },
+      {
         path: '/workflow/definition',
         name: 'ProcessDefinition',
         component: () => import('@/views/workflow/definition/index.vue'),
