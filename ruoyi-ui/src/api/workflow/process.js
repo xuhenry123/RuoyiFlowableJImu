@@ -27,6 +27,14 @@ export function deployProcess(file, name) {
   })
 }
 
+export function deployXml(xml, name) {
+  return request({
+    url: '/flowable/process/definition/deployXml',
+    method: 'post',
+    data: { xml, name }
+  })
+}
+
 export function suspendProcess(id) {
   return request({
     url: `/flowable/process/definition/${id}`,

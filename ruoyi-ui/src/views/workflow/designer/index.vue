@@ -114,6 +114,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { FolderAdd, FolderChecked, Upload, Download, VideoPlay, CircleClose, User, Cpu, Switch, Connection, Document, Memo } from '@element-plus/icons-vue'
+import { deployXml } from '@/api/workflow/process'
 import BpmnModeler from 'bpmn-js/lib/Modeler'
 import 'bpmn-js/dist/assets/diagram-js.css'
 import 'bpmn-js/dist/assets/bpmn-js.css'
@@ -323,25 +324,49 @@ const handleNew = () => {
   }).catch(() => {})
 }
 
-const handleSave = () => {
-  bpmnModeler.saveXML({ format: true }, (err, xml) => {
-    if (err) {
-      ElMessage.error('保存失败: ' + err.message)
-      return
+const handleSave = async () => {
+  try {
+    const { xml } = await bpmnModeler.saveXML({ format: true })
+    
+    const response = await deployXml(xml, processName.value)
+    
+    if (response.code === 200 || response.code === 0) {
+      localStorage.setItem('bpmn_xml', xml)
+      localStorage.setItem('bpmn_process_key', processKey.value)
+      localStorage.setItem('bpmn_deployment_id', response.data)
+      ElMessage.success('流程保存成功')
+    } else {
+      ElMessage.error(response.msg || '保存失败')
     }
-    localStorage.setItem('bpmn_xml', xml)
-    ElMessage.success('流程已保存')
-  })
+  } catch (err) {
+    console.error('Save error:', err)
+    ElMessage.error('保存失败: ' + (err.message || '请检查网络连接'))
+  }
 }
 
-const handleDeploy = () => {
-  bpmnModeler.saveXML({ format: true }, (err, xml) => {
-    if (err) {
-      ElMessage.error('部署失败: ' + err.message)
+const handleDeploy = async () => {
+  try {
+    const { xml } = await bpmnModeler.saveXML({ format: true })
+    
+    if (!processKey.value) {
+      ElMessage.warning('请先设置流程Key')
       return
     }
-    ElMessage.success('流程部署成功！可通过"流程定义"页面查看')
-  })
+    
+    const response = await deployXml(xml, processName.value)
+    
+    if (response.code === 200 || response.code === 0) {
+      localStorage.setItem('bpmn_xml', xml)
+      localStorage.setItem('bpmn_process_key', processKey.value)
+      localStorage.setItem('bpmn_deployment_id', response.data)
+      ElMessage.success('流程部署成功！可通过"流程定义"页面查看')
+    } else {
+      ElMessage.error(response.msg || '部署失败')
+    }
+  } catch (err) {
+    console.error('Deploy error:', err)
+    ElMessage.error('部署失败: ' + (err.message || '请检查网络连接'))
+  }
 }
 
 const handleDownload = () => {
