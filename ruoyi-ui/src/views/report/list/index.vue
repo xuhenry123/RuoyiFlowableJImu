@@ -34,7 +34,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Chart } from '@element-plus/icons-vue'
+import { Plus, DataAnalysis } from '@element-plus/icons-vue'
 
 const tableData = ref([])
 

@@ -2,9 +2,8 @@
   <el-container class="layout-container">
     <el-aside :width="isCollapse ? '64px' : '200px'" class="aside">
       <div class="logo" :class="{ 'logo-collapse': isCollapse }">
-        <img src="@/assets/logo.png" v-if="!isCollapse" />
         <span v-if="!isCollapse">RuoYi</span>
-        <img src="@/assets/logo-mini.png" v-else class="mini-logo" />
+        <span v-else>R</span>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -13,25 +12,60 @@
         router
         class="menu"
       >
-        <template v-for="item in menus" :key="item.path">
-          <el-sub-menu v-if="item.children && item.children.length" :index="item.path">
-            <template #title>
-              <el-icon><component :is="item.icon" /></el-icon>
-              <span>{{ item.title }}</span>
-            </template>
-            <el-menu-item
-              v-for="child in item.children"
-              :key="child.path"
-              :index="child.path"
-            >
-              {{ child.title }}
-            </el-menu-item>
-          </el-sub-menu>
-          <el-menu-item v-else :index="item.path">
-            <el-icon><component :is="item.icon" /></el-icon>
-            <span>{{ item.title }}</span>
-          </el-menu-item>
-        </template>
+        <el-menu-item index="/index">
+          <el-icon><HomeFilled /></el-icon>
+          <span>首页</span>
+        </el-menu-item>
+        
+        <el-sub-menu index="/system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/system/user">用户管理</el-menu-item>
+          <el-menu-item index="/system/role">角色管理</el-menu-item>
+          <el-menu-item index="/system/menu">菜单管理</el-menu-item>
+          <el-menu-item index="/system/dept">部门管理</el-menu-item>
+          <el-menu-item index="/system/post">岗位管理</el-menu-item>
+        </el-sub-menu>
+        
+        <el-sub-menu index="/workflow">
+          <template #title>
+            <el-icon><Connection /></el-icon>
+            <span>流程管理</span>
+          </template>
+          <el-menu-item index="/workflow/designer">流程设计</el-menu-item>
+          <el-menu-item index="/workflow/definition">流程定义</el-menu-item>
+          <el-menu-item index="/workflow/instance">流程实例</el-menu-item>
+          <el-menu-item index="/workflow/task">我的任务</el-menu-item>
+        </el-sub-menu>
+        
+        <el-sub-menu index="/report">
+          <template #title>
+            <el-icon><DataLine /></el-icon>
+            <span>报表中心</span>
+          </template>
+          <el-menu-item index="/report/list">报表管理</el-menu-item>
+          <el-menu-item index="/report/design">报表设计</el-menu-item>
+        </el-sub-menu>
+        
+        <el-sub-menu index="/monitor">
+          <template #title>
+            <el-icon><Monitor /></el-icon>
+            <span>系统监控</span>
+          </template>
+          <el-menu-item index="/monitor/online">在线用户</el-menu-item>
+          <el-menu-item index="/monitor/operlog">操作日志</el-menu-item>
+        </el-sub-menu>
+        
+        <el-sub-menu index="/tool">
+          <template #title>
+            <el-icon><Tools /></el-icon>
+            <span>系统工具</span>
+          </template>
+          <el-menu-item index="/tool/build">表单构建</el-menu-item>
+          <el-menu-item index="/tool/gen">代码生成</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     <el-container>
@@ -43,9 +77,7 @@
           </el-icon>
           <el-breadcrumb separator="/">
             <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item v-if="route.meta.title">
-              {{ route.meta.title }}
-            </el-breadcrumb-item>
+            <el-breadcrumb-item v-if="route.meta.title">{{ route.meta.title }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="header-right">
@@ -76,12 +108,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from '@/store'
-import { getMenu } from '@/utils/menu'
 import { ElMessage } from 'element-plus'
-import {
-  Fold, Expand, ArrowDown, HomeFilled, Setting, User, Role, Connection,
-  DataLine, Monitor, Tool, FlowChart, Flow, Ticket, Chart, Edit, Office,
-  Menu as MenuIcon, Post, Dict, Config, Operation, Login, Form, Code
+import { 
+  Fold, Expand, ArrowDown, HomeFilled, Setting, Connection, 
+  DataLine, Monitor, Tools 
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -89,20 +119,13 @@ const router = useRouter()
 const store = useStore()
 
 const isCollapse = ref(false)
-const menus = ref([])
 const user = computed(() => store.state.user)
-
 const activeMenu = computed(() => route.path)
 
-const icons = {
-  HomeFilled, Setting, User, Role, Connection, DataLine, Monitor, Tool,
-  FlowChart, Flow, Ticket, Chart, Edit, Office, Menu: MenuIcon, Post,
-  Dict, Config, Operation, Login, Form, Code
-}
-
-onMounted(async () => {
-  menus.value = await getMenu()
-  store.dispatch('user/getInfo')
+onMounted(() => {
+  if (store.state.token) {
+    store.dispatch('user/getInfo')
+  }
 })
 
 const toggleCollapse = () => {
@@ -134,33 +157,10 @@ const handleCommand = (command) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   background: #2b3a4a;
   color: #fff;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
-}
-
-.logo img {
-  height: 32px;
-}
-
-.logo-collapse {
-  justify-content: center;
-}
-
-.mini-logo {
-  width: 24px;
-  height: 24px;
-}
-
-.menu {
-  border-right: none;
-  background: transparent;
-}
-
-.menu:not(.el-menu--collapse) {
-  width: 200px;
 }
 
 .header {

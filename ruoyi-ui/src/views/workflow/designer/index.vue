@@ -96,7 +96,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { FolderChecked, Upload, Download, VideoPlay, CircleClose, User, Cpu, SetUp, Connection } from '@element-plus/icons-vue'
+import { FolderChecked, Upload, Download, VideoPlay, CircleClose, User, Cpu, Setting, Connection } from '@element-plus/icons-vue'
 import BpmnModeler from 'bpmn-js/lib/Modeler'
 import 'bpmn-js/dist/assets/diagram-js.css'
 import 'bpmn-js/dist/assets/bpmn-js.css'
