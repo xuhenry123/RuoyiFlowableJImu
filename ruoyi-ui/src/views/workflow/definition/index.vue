@@ -39,7 +39,6 @@
             <el-tag v-else type="info">{{ row.category }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.suspended ? 'danger' : 'success'">
@@ -48,7 +47,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="deploymentTime" label="部署时间" width="160" />
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleStart(row)">
               <el-icon><VideoPlay /></el-icon>启动
@@ -77,51 +76,6 @@
       />
     </el-card>
 
-    <el-dialog v-model="deployDialogVisible" title="部署流程" width="500px">
-      <el-form ref="deployFormRef" :model="deployForm" :rules="deployRules" label-width="100px">
-        <el-form-item label="流程名称" prop="name">
-          <el-input v-model="deployForm.name" placeholder="请输入流程名称" />
-        </el-form-item>
-        <el-form-item label="流程分类" prop="category">
-          <el-select v-model="deployForm.category" placeholder="请选择">
-            <el-option label="办公类" value="OFFICE" />
-            <el-option label="财务类" value="FINANCE" />
-            <el-option label="人事类" value="HR" />
-            <el-option label="审批类" value="APPROVAL" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="BPMN文件" prop="file">
-          <el-upload
-            ref="uploadRef"
-            :auto-upload="false"
-            :limit="1"
-            accept=".bpmn,.xml,.zip"
-            :file-list="fileList"
-            :on-change="handleFileChange"
-            :on-remove="handleFileRemove"
-          >
-            <el-button>
-              <el-icon><Upload /></el-icon>选择文件
-            </el-button>
-            <template #tip>
-              <div class="el-upload__tip">支持 .bpmn、.xml、.zip 格式文件</div>
-            </template>
-          </el-upload>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="deployDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmDeploy">确认部署</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="diagramDialogVisible" title="流程图" width="80%" top="5vh">
-      <div class="diagram-container">
-        <iframe v-if="diagramUrl" :src="diagramUrl" frameborder="0" class="diagram-iframe" />
-        <el-empty v-else description="暂无流程图" />
-      </div>
-    </el-dialog>
-
     <el-dialog v-model="startDialogVisible" title="启动流程" width="500px">
       <el-form ref="startFormRef" :model="startForm" label-width="100px">
         <el-form-item label="流程名称">
@@ -146,24 +100,37 @@
         <el-button type="primary" @click="confirmStart">确认启动</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="diagramDialogVisible" title="流程图" width="80%" top="5vh">
+      <div class="diagram-container">
+        <el-empty description="流程图功能需要后端支持" />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Upload, Delete, VideoPlay, Switch, View } from '@element-plus/icons-vue'
+import { Search, Refresh, Delete, VideoPlay, Switch, View } from '@element-plus/icons-vue'
+import { createLocalApi, initLocalData } from '@/utils/storage'
+
+initLocalData('flow_definition', [
+  { id: '1', definitionId: 'leaveProcess:1', name: '请假流程', key: 'leaveProcess', category: 'HR', version: 1, deploymentId: 'd1', suspended: false, tenantId: '', deploymentTime: '2026-03-20 10:00:00' },
+  { id: '2', definitionId: 'expenseProcess:1', name: '报销流程', key: 'expenseProcess', category: 'FINANCE', version: 1, deploymentId: 'd2', suspended: false, tenantId: '', deploymentTime: '2026-03-18 14:30:00' },
+  { id: '3', definitionId: 'purchaseProcess:1', name: '采购流程', key: 'purchaseProcess', category: 'OFFICE', version: 1, deploymentId: 'd3', suspended: false, tenantId: '', deploymentTime: '2026-03-15 09:00:00' },
+  { id: '4', definitionId: 'leaveProcess:2', name: '请假流程', key: 'leaveProcess', category: 'HR', version: 2, deploymentId: 'd4', suspended: false, tenantId: '', deploymentTime: '2026-03-25 11:00:00' }
+])
+
+const definitionApi = createLocalApi('flow_definition')
 
 const loading = ref(false)
 const total = ref(0)
 const tableData = ref([])
 const selectedRows = ref([])
-const deployDialogVisible = ref(false)
 const diagramDialogVisible = ref(false)
 const startDialogVisible = ref(false)
-const diagramUrl = ref('')
 const currentProcess = ref(null)
-const fileList = ref([])
 
 const queryParams = reactive({
   pageNum: 1,
@@ -172,47 +139,25 @@ const queryParams = reactive({
   category: ''
 })
 
-const deployForm = reactive({
-  name: '',
-  category: 'OFFICE',
-  file: null
-})
-
-const deployRules = {
-  name: [{ required: true, message: '请输入流程名称', trigger: 'blur' }],
-  file: [{ required: true, message: '请选择BPMN文件', trigger: 'change' }]
-}
-
 const startForm = reactive({
   businessKey: '',
   assignee: '',
   comment: ''
 })
 
-const mockData = [
-  { id: 'holiday:1', name: '请假流程', key: 'holiday', version: 1, category: 'HR', description: '员工请假申请流程', suspended: false, deploymentTime: '2026-03-20 10:00:00' },
-  { id: 'expense:1', name: '报销流程', key: 'expense', version: 1, category: 'FINANCE', description: '日常费用报销流程', suspended: false, deploymentTime: '2026-03-18 14:30:00' },
-  { id: 'leave:2', name: '离职流程', key: 'leave', version: 2, category: 'HR', description: '员工离职办理流程', suspended: true, deploymentTime: '2026-03-15 09:00:00' },
-  { id: 'purchase:1', name: '采购流程', key: 'purchase', version: 1, category: 'OFFICE', description: '办公用品采购流程', suspended: false, deploymentTime: '2026-03-10 16:00:00' },
-  { id: 'contract:1', name: '合同审批', key: 'contract', version: 1, category: 'APPROVAL', description: '合同审批流程', suspended: false, deploymentTime: '2026-03-05 11:00:00' }
-]
-
-const getList = () => {
+const getList = async () => {
   loading.value = true
-  setTimeout(() => {
-    let data = [...mockData]
-    if (queryParams.keyword) {
-      data = data.filter(item => 
-        item.name.includes(queryParams.keyword) || item.key.includes(queryParams.keyword)
-      )
+  try {
+    const response = await definitionApi.list(queryParams)
+    if (response.code === 200) {
+      tableData.value = response.data.list || []
+      total.value = response.data.total || 0
     }
-    if (queryParams.category) {
-      data = data.filter(item => item.category === queryParams.category)
-    }
-    tableData.value = data
-    total.value = data.length
+  } catch (error) {
+    console.error('获取流程定义列表失败:', error)
+  } finally {
     loading.value = false
-  }, 300)
+  }
 }
 
 const handleQuery = () => {
@@ -223,37 +168,11 @@ const handleQuery = () => {
 const resetQuery = () => {
   queryParams.keyword = ''
   queryParams.category = ''
-  handleQuery()
+  getList()
 }
 
 const handleSelectionChange = (selection) => {
   selectedRows.value = selection
-}
-
-const handleFileChange = (file) => {
-  deployForm.file = file.raw
-}
-
-const handleFileRemove = () => {
-  deployForm.file = null
-}
-
-const handleDeploy = () => {
-  deployForm.name = ''
-  deployForm.category = 'OFFICE'
-  deployForm.file = null
-  fileList.value = []
-  deployDialogVisible.value = true
-}
-
-const confirmDeploy = () => {
-  if (!deployForm.file) {
-    ElMessage.warning('请选择BPMN文件')
-    return
-  }
-  ElMessage.success('流程部署成功')
-  deployDialogVisible.value = false
-  getList()
 }
 
 const handleStart = (row) => {
@@ -264,25 +183,28 @@ const handleStart = (row) => {
   startDialogVisible.value = true
 }
 
-const confirmStart = () => {
-  ElMessage.success(`流程「${currentProcess.value.name}」启动成功`)
+const confirmStart = async () => {
+  ElMessage.success(`流程「${currentProcess.value.name}」启动成功（本地模式）`)
   startDialogVisible.value = false
 }
 
-const handleSuspend = (row) => {
+const handleSuspend = async (row) => {
   const action = row.suspended ? '激活' : '挂起'
   ElMessageBox.confirm(`确认${action}流程「${row.name}」吗？`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    row.suspended = !row.suspended
-    ElMessage.success(`${action}成功`)
-  }).catch(() => {})
+  }).then(async () => {
+    try {
+      row.suspended = !row.suspended
+      ElMessage.success(`${action}成功`)
+    } catch (error) {
+      ElMessage.error(`${action}失败`)
+    }
+  })
 }
 
 const handleDiagram = (row) => {
-  diagramUrl.value = `/flowable/process/definition/diagram/${row.id}`
   diagramDialogVisible.value = true
 }
 
@@ -291,13 +213,22 @@ const handleDelete = (row) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'error'
-  }).then(() => {
-    ElMessage.success('删除成功')
-    getList()
-  }).catch(() => {})
+  }).then(async () => {
+    try {
+      const response = await definitionApi.delete(row.id)
+      if (response.code === 200) {
+        ElMessage.success('删除成功')
+        getList()
+      }
+    } catch (error) {
+      ElMessage.error('删除失败')
+    }
+  })
 }
 
-getList()
+onMounted(() => {
+  getList()
+})
 </script>
 
 <style scoped>
@@ -309,11 +240,8 @@ getList()
 
 .diagram-container {
   height: 70vh;
-}
-
-.diagram-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
