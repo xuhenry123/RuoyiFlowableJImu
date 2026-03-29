@@ -6,7 +6,7 @@
           <span>流程设计器</span>
           <el-button-group>
             <el-button type="primary" @click="handleNew">
-              <el-icon><DocumentAdd /></el-icon>新建
+              <el-icon><FolderAdd /></el-icon>新建
             </el-button>
             <el-button type="primary" @click="handleSave">
               <el-icon><FolderChecked /></el-icon>保存
@@ -28,40 +28,36 @@
         <div class="palette">
           <div class="palette-title">流程元素</div>
           <div class="palette-items">
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('startEvent')">
+            <div class="palette-item" @click="addElement('startEvent')">
               <el-icon><VideoPlay /></el-icon>
               <span>开始事件</span>
             </div>
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('endEvent')">
+            <div class="palette-item" @click="addElement('endEvent')">
               <el-icon><CircleClose /></el-icon>
               <span>结束事件</span>
             </div>
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('userTask')">
+            <div class="palette-item" @click="addElement('userTask')">
               <el-icon><User /></el-icon>
               <span>用户任务</span>
             </div>
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('serviceTask')">
+            <div class="palette-item" @click="addElement('serviceTask')">
               <el-icon><Cpu /></el-icon>
               <span>服务任务</span>
             </div>
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('exclusiveGateway')">
-              <el-icon><Connection /></el-icon>
+            <div class="palette-item" @click="addElement('exclusiveGateway')">
+              <el-icon><Switch /></el-icon>
               <span>排他网关</span>
             </div>
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('parallelGateway')">
+            <div class="palette-item" @click="addElement('parallelGateway')">
               <el-icon><Connection /></el-icon>
               <span>并行网关</span>
             </div>
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('inclusiveGateway')">
-              <el-icon><Connection /></el-icon>
-              <span>包容网关</span>
-            </div>
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('scriptTask')">
+            <div class="palette-item" @click="addElement('scriptTask')">
               <el-icon><Document /></el-icon>
               <span>脚本任务</span>
             </div>
-            <div class="palette-item" draggable="true" @dragstart="onDragStart('manualTask')">
-              <el-icon><DocumentCopy /></el-icon>
+            <div class="palette-item" @click="addElement('manualTask')">
+              <el-icon><Memo /></el-icon>
               <span>手动任务</span>
             </div>
           </div>
@@ -88,9 +84,6 @@
                 <el-option label="审批类" value="APPROVAL" />
               </el-select>
             </el-form-item>
-            <el-form-item label="描述">
-              <el-input v-model="description" type="textarea" :rows="2" placeholder="请输入描述" @change="updateProcessInfo" />
-            </el-form-item>
           </el-form>
           
           <el-divider content-position="left">元素属性</el-divider>
@@ -104,26 +97,11 @@
             <el-form-item label="元素类型">
               <el-input :value="getElementTypeName(selectedElement.type)" disabled />
             </el-form-item>
-            <el-form-item label="办理人" v-if="selectedElement.type === 'bpmn:UserTask'">
+            <el-form-item label="办理人" v-if="isUserTask(selectedElement.type)">
               <el-input v-model="selectedElement.assignee" placeholder="请输入办理人" @change="updateElementAssignee" />
             </el-form-item>
-            <el-form-item label="优先级" v-if="selectedElement.type === 'bpmn:UserTask'">
-              <el-select v-model="selectedElement.priority" placeholder="请选择" @change="updateElementPriority">
-                <el-option label="最低" value="0" />
-                <el-option label="低" value="20" />
-                <el-option label="普通" value="50" />
-                <el-option label="高" value="80" />
-                <el-option label="最高" value="100" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="时限(天)" v-if="selectedElement.type === 'bpmn:UserTask'">
-              <el-input-number v-model="selectedElement.timeout" :min="0" :max="365" @change="updateElementTimeout" />
-            </el-form-item>
-            <el-form-item label="表达式" v-if="selectedElement.type === 'bpmn:ServiceTask'">
-              <el-input v-model="selectedElement.expression" placeholder="请输入表达式" @change="updateElementExpression" />
-            </el-form-item>
           </el-form>
-          <el-empty v-else description="请在画布中选择元素" :image-size="60" />
+          <el-empty v-else description="点击左侧元素添加到画布" :image-size="60" />
         </div>
       </div>
     </el-card>
@@ -133,49 +111,71 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { FolderChecked, Upload, Download, VideoPlay, CircleClose, User, Cpu, Connection, Document, DocumentCopy } from '@element-plus/icons-vue'
+import { FolderAdd, FolderChecked, Upload, Download, VideoPlay, CircleClose, User, Cpu, Switch, Connection, Document, Memo } from '@element-plus/icons-vue'
 import BpmnModeler from 'bpmn-js/lib/Modeler'
 import 'bpmn-js/dist/assets/diagram-js.css'
 import 'bpmn-js/dist/assets/bpmn-js.css'
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css'
 
-const fileInputRef = ref(null)
 const bpmnCanvasRef = ref(null)
+const fileInputRef = ref(null)
 const processName = ref('请假流程')
 const processKey = ref('leaveProcess')
 const processCategory = ref('HR')
-const description = ref('')
 const selectedElement = ref(null)
-const currentXml = ref('')
 
 let bpmnModeler = null
 
+const elementTypeMap = {
+  startEvent: 'bpmn:StartEvent',
+  endEvent: 'bpmn:EndEvent',
+  userTask: 'bpmn:UserTask',
+  serviceTask: 'bpmn:ServiceTask',
+  exclusiveGateway: 'bpmn:ExclusiveGateway',
+  parallelGateway: 'bpmn:ParallelGateway',
+  scriptTask: 'bpmn:ScriptTask',
+  manualTask: 'bpmn:ManualTask'
+}
+
+const elementNames = {
+  startEvent: '开始',
+  endEvent: '结束',
+  userTask: '用户任务',
+  serviceTask: '服务任务',
+  exclusiveGateway: '排他网关',
+  parallelGateway: '并行网关',
+  scriptTask: '脚本任务',
+  manualTask: '手动任务'
+}
+
 const getElementTypeName = (type) => {
-  const typeMap = {
+  const map = {
     'bpmn:StartEvent': '开始事件',
     'bpmn:EndEvent': '结束事件',
     'bpmn:UserTask': '用户任务',
     'bpmn:ServiceTask': '服务任务',
-    'bpmn:ScriptTask': '脚本任务',
-    'bpmn:ManualTask': '手动任务',
     'bpmn:ExclusiveGateway': '排他网关',
     'bpmn:ParallelGateway': '并行网关',
-    'bpmn:InclusiveGateway': '包容网关',
-    'bpmn:Task': '任务'
+    'bpmn:ScriptTask': '脚本任务',
+    'bpmn:ManualTask': '手动任务'
   }
-  return typeMap[type] || type
+  return map[type] || type || ''
 }
 
-const createEmptyXml = () => {
+const isUserTask = (type) => {
+  return type === 'bpmn:UserTask'
+}
+
+const createNewXml = () => {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-                 xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-                 xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                 xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-                 id="Definitions_1"
-                 targetNamespace="http://bpmn.io/schema/bpmn">
+                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                   id="Definitions_1"
+                   targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="${processKey.value}" name="${processName.value}" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="开始" />
   </bpmn:process>
@@ -185,117 +185,120 @@ const createEmptyXml = () => {
 </bpmn:definitions>`
 }
 
-const initBpmn = () => {
-  const xml = createEmptyXml()
+const initBpmn = async () => {
+  await nextTick()
   
   bpmnModeler = new BpmnModeler({
     container: bpmnCanvasRef.value,
     keyboard: { bindTo: document }
   })
 
-  bpmnModeler.importXML(xml, (err) => {
-    if (err) {
-      console.error('Failed to import BPMN:', err)
-      ElMessage.error('流程图初始化失败')
-      return
-    }
+  try {
+    await bpmnModeler.importXML(createNewXml())
     const canvas = bpmnModeler.get('canvas')
     canvas.zoom('fit-viewport')
-    currentXml.value = xml
-  })
+  } catch (err) {
+    console.error('Failed to import BPMN:', err)
+    ElMessage.error('流程图初始化失败')
+  }
 
   bpmnModeler.on('selection.changed', (event) => {
-    const element = event.selectedElements[0]
+    const element = event.newSelection[0]
     if (element && element.businessObject) {
       selectedElement.value = {
         id: element.id,
         name: element.businessObject.name || '',
-        type: element.$type,
-        assignee: element.businessObject.assignee || '',
-        priority: element.businessObject.priority || '50',
-        timeout: element.businessObject.timeout || 0,
-        expression: element.businessObject.expression || ''
+        type: element.businessObject.$type,
+        assignee: element.businessObject.assignee || ''
       }
     } else {
       selectedElement.value = null
     }
   })
+}
 
-  bpmnModeler.on('commandStack.changed', () => {
-    bpmnModeler.saveXML({ format: true }, (err, xml) => {
-      if (!err) {
-        currentXml.value = xml
-      }
+const addElement = (type) => {
+  if (!bpmnModeler) {
+    ElMessage.error('流程设计器未初始化')
+    return
+  }
+
+  try {
+    const elementFactory = bpmnModeler.get('elementFactory')
+    const modeling = bpmnModeler.get('modeling')
+    const bpmnType = elementTypeMap[type]
+    
+    if (!bpmnType) {
+      ElMessage.warning('不支持的元素类型')
+      return
+    }
+
+    const x = 150 + Math.random() * 300
+    const y = 150 + Math.random() * 200
+
+    const newElement = elementFactory.createElement({
+      type: bpmnType
     })
-  })
+
+    modeling.createElement({
+      type: bpmnType,
+      x: x,
+      y: y
+    }, newElement)
+
+    modeling.updateProperties(newElement, {
+      name: elementNames[type]
+    })
+
+    ElMessage.success('已添加' + elementNames[type])
+  } catch (err) {
+    console.error('Create element error:', err)
+    ElMessage.error('添加元素失败: ' + err.message)
+  }
 }
 
 const updateProcessInfo = () => {
   if (!bpmnModeler) return
-  const elementRegistry = bpmnModeler.get('elementRegistry')
-  const modeling = bpmnModeler.get('modeling')
-  
-  const process = elementRegistry.get(processKey.value)
-  if (process) {
-    modeling.updateProperties(process, {
-      name: processName.value,
-      documentation: description.value
-    })
+  try {
+    const elementRegistry = bpmnModeler.get('elementRegistry')
+    const process = elementRegistry.get(processKey.value)
+    if (process) {
+      const modeling = bpmnModeler.get('modeling')
+      modeling.updateProperties(process, {
+        name: processName.value
+      })
+    }
+  } catch (err) {
+    console.error('Update process info error:', err)
   }
 }
 
 const updateElementName = () => {
   if (!selectedElement.value || !bpmnModeler) return
-  const modeling = bpmnModeler.get('modeling')
-  const elementRegistry = bpmnModeler.get('elementRegistry')
-  const element = elementRegistry.get(selectedElement.value.id)
-  if (element) {
-    modeling.updateProperties(element, { name: selectedElement.value.name })
+  try {
+    const elementRegistry = bpmnModeler.get('elementRegistry')
+    const modeling = bpmnModeler.get('modeling')
+    const element = elementRegistry.get(selectedElement.value.id)
+    if (element) {
+      modeling.updateProperties(element, { name: selectedElement.value.name })
+    }
+  } catch (err) {
+    console.error('Update element name error:', err)
   }
 }
 
 const updateElementAssignee = () => {
   if (!selectedElement.value || !bpmnModeler) return
-  const modeling = bpmnModeler.get('modeling')
-  const elementRegistry = bpmnModeler.get('elementRegistry')
-  const element = elementRegistry.get(selectedElement.value.id)
-  if (element) {
-    modeling.updateProperties(element, { assignee: selectedElement.value.assignee })
+  try {
+    const elementRegistry = bpmnModeler.get('elementRegistry')
+    const modeling = bpmnModeler.get('modeling')
+    const element = elementRegistry.get(selectedElement.value.id)
+    if (element) {
+      modeling.updateProperties(element, { assignee: selectedElement.value.assignee })
+    }
+  } catch (err) {
+    console.error('Update assignee error:', err)
   }
-}
-
-const updateElementPriority = () => {
-  if (!selectedElement.value || !bpmnModeler) return
-  const modeling = bpmnModeler.get('modeling')
-  const elementRegistry = bpmnModeler.get('elementRegistry')
-  const element = elementRegistry.get(selectedElement.value.id)
-  if (element) {
-    modeling.updateProperties(element, { priority: selectedElement.value.priority })
-  }
-}
-
-const updateElementTimeout = () => {
-  if (!selectedElement.value || !bpmnModeler) return
-  const modeling = bpmnModeler.get('modeling')
-  const elementRegistry = bpmnModeler.get('elementRegistry')
-  const element = elementRegistry.get(selectedElement.value.id)
-  if (element) {
-    modeling.updateProperties(element, { timeout: selectedElement.value.timeout })
-  }
-}
-
-const updateElementExpression = () => {
-  if (!selectedElement.value || !bpmnModeler) return
-  const modeling = bpmnModeler.get('modeling')
-  const elementRegistry = bpmnModeler.get('elementRegistry')
-  const element = elementRegistry.get(selectedElement.value.id)
-  if (element) {
-    modeling.updateProperties(element, { expression: selectedElement.value.expression })
-  }
-}
-
-const onDragStart = (type) => {
-  console.log('Drag start:', type)
 }
 
 const handleNew = () => {
@@ -303,20 +306,20 @@ const handleNew = () => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
+  }).then(async () => {
     processName.value = '新流程'
     processKey.value = 'newProcess'
     processCategory.value = 'OFFICE'
-    description.value = ''
+    selectedElement.value = null
     
-    const xml = createEmptyXml()
-    bpmnModeler.importXML(xml, (err) => {
-      if (!err) {
-        const canvas = bpmnModeler.get('canvas')
-        canvas.zoom('fit-viewport')
-        ElMessage.success('已创建新流程')
-      }
-    })
+    try {
+      await bpmnModeler.importXML(createNewXml())
+      const canvas = bpmnModeler.get('canvas')
+      canvas.zoom('fit-viewport')
+      ElMessage.success('已创建新流程')
+    } catch (err) {
+      ElMessage.error('创建失败: ' + err.message)
+    }
   }).catch(() => {})
 }
 
@@ -326,8 +329,8 @@ const handleSave = () => {
       ElMessage.error('保存失败: ' + err.message)
       return
     }
-    console.log('流程XML:', xml)
-    ElMessage.success('流程已保存到本地')
+    localStorage.setItem('bpmn_xml', xml)
+    ElMessage.success('流程已保存')
   })
 }
 
@@ -351,7 +354,7 @@ const handleDownload = () => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${processKey.value}.bpmn`
+    a.download = processKey.value + '.bpmn'
     a.click()
     URL.revokeObjectURL(url)
     ElMessage.success('下载成功')
@@ -367,31 +370,16 @@ const handleFileChange = (event) => {
   if (!file) return
   
   const reader = new FileReader()
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     const xml = e.target.result
-    bpmnModeler.importXML(xml, (err) => {
-      if (err) {
-        ElMessage.error('导入失败: ' + err.message)
-        return
-      }
+    try {
+      await bpmnModeler.importXML(xml)
       const canvas = bpmnModeler.get('canvas')
       canvas.zoom('fit-viewport')
-      
-      bpmnModeler.saveXML({ format: true }, (saveErr, savedXml) => {
-        if (!saveErr && savedXml) {
-          const keyMatch = savedXml.match(/id="([^"]+)"/)
-          if (keyMatch) {
-            processKey.value = keyMatch[1]
-          }
-          const nameMatch = savedXml.match(/name="([^"]+)"/)
-          if (nameMatch) {
-            processName.value = nameMatch[1]
-          }
-        }
-      })
-      
       ElMessage.success('导入成功')
-    })
+    } catch (err) {
+      ElMessage.error('导入失败: ' + err.message)
+    }
   }
   reader.readAsText(file)
   event.target.value = ''
@@ -421,12 +409,12 @@ onUnmounted(() => {
 
 .designer-wrapper {
   display: flex;
-  height: calc(100vh - 250px);
+  height: calc(100vh - 220px);
   min-height: 500px;
 }
 
 .palette {
-  width: 160px;
+  width: 140px;
   background: #fff;
   border-right: 1px solid #e4e7ed;
   padding: 15px;
@@ -449,35 +437,34 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: #f5f7fa;
   border-radius: 4px;
-  cursor: move;
-  font-size: 12px;
+  cursor: pointer;
+  font-size: 13px;
   color: #606266;
   transition: all 0.2s;
 }
 
 .palette-item:hover {
-  background: #ecf5ff;
-  color: #409eff;
+  background: #409eff;
+  color: #fff;
 }
 
 .canvas {
   flex: 1;
   background: #f5f7fa;
   overflow: hidden;
-  height: 600px;
 }
 
 #bpmn-canvas {
   width: 100%;
   height: 100%;
-  min-height: 600px;
+  min-height: 500px;
 }
 
 .properties-panel {
-  width: 280px;
+  width: 260px;
   background: #fff;
   border-left: 1px solid #e4e7ed;
   padding: 15px;
