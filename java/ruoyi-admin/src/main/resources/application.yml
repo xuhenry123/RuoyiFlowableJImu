@@ -277,14 +277,10 @@ flowable:
   timer-executor-max-thread-size: 8
   timer-executor-queue-size: 100
   timer-executor-thread-name-prefix: Flowable-Timer-
-  # 历史级别 full表示最大历史级别
+  # 历史级别
   history-level: full
   # 启用数据库事件日志
   enable-database-event-log: false
-  # Flowable UI 配置
-  ui:
-    app:
-      context-path: /flowable-ui
 
 --- # JimuReport 积木报表配置
 jimureport:
@@ -292,10 +288,3 @@ jimureport:
   enabled: true
   # 文件上传路径
   upload-path: ./uploads/jimureport
-  # 数据源配置
-  datasources:
-    - name: default
-      driver: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/ruoyi-vue-plus?useUnicode=true&characterEncoding=utf8
-      username: root
-      password: root123

@@ -1,11 +1,16 @@
 <template>
-  <el-config-provider :locale="zhCn">
-    <router-view />
-  </el-config-provider>
+  <router-view />
 </template>
 
 <script setup>
-import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import { onMounted } from 'vue'
+import { useStore } from 'vuex'
+
+const store = useStore()
+
+onMounted(() => {
+  store.dispatch('user/getInfo')
+})
 </script>
 
 <style>

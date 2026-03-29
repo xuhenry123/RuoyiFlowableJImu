@@ -1,7 +1,6 @@
 package org.dromara.flowable.domain.vo;
 
 import lombok.Data;
-
 import java.util.Date;
 import java.util.Map;
 
@@ -14,10 +13,10 @@ public class FlowTaskVo {
     private String assignee;
     private Date createTime;
     private Date dueDate;
-    String priority;
-    String taskDefinitionKey;
-    String processInstanceId;
-    String executionId;
-    String processDefinitionId;
-    Map<String, Object> variables;
+    private String priority;
+    private String taskDefinitionKey;
+    private String processInstanceId;
+    private String executionId;
+    private String processDefinitionId;
+    private Map<String, Object> variables;
 }

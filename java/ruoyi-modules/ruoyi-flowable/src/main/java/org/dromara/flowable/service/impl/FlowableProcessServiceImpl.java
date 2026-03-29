@@ -1,7 +1,5 @@
 package org.dromara.flowable.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,18 +15,13 @@ import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.runtime.ProcessInstance;
-import org.flowable.engine.task.Comment;
 import org.flowable.task.api.Task;
-import org.flowable.task.api.TaskQuery;
 import org.flowable.task.api.history.HistoricTaskInstance;
 import org.flowable.task.api.history.HistoricTaskInstanceQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -48,14 +41,8 @@ public class FlowableProcessServiceImpl implements IFlowableProcessService {
             .orderByProcessDefinitionKey().desc()
             .listPage(pageQuery.getOffset(), pageQuery.getPageSize());
         
-        long count = repositoryService.createProcessDefinitionQuery()
-            .latestVersion()
-            .count();
-        
-        List<FlowProcessDefinitionVo> list = page.stream()
-            .map(this::convertToVo)
-            .collect(Collectors.toList());
-        
+        long count = repositoryService.createProcessDefinitionQuery().latestVersion().count();
+        List<FlowProcessDefinitionVo> list = page.stream().map(this::convertToVo).collect(Collectors.toList());
         return new TableDataInfo<>(list, count);
     }
 
@@ -66,8 +53,7 @@ public class FlowableProcessServiceImpl implements IFlowableProcessService {
         if (StringUtils.isNotBlank(category)) {
             query.processDefinitionCategory(category);
         }
-        return query.orderByProcessDefinitionKey().desc().list()
-            .stream().map(this::convertToVo).collect(Collectors.toList());
+        return query.orderByProcessDefinitionKey().desc().list().stream().map(this::convertToVo).collect(Collectors.toList());
     }
 
     @Override
@@ -109,13 +95,9 @@ public class FlowableProcessServiceImpl implements IFlowableProcessService {
     @Override
     public TableDataInfo<FlowTaskVo> selectTodoTaskPage(String userId, PageQuery pageQuery) {
         var taskService = processEngine.getTaskService();
-        TaskQuery query = taskService.createTaskQuery()
-            .taskCandidateOrAssigned(userId)
-            .orderByTaskCreateTime().desc();
-        
+        var query = taskService.createTaskQuery().taskCandidateOrAssigned(userId).orderByTaskCreateTime().desc();
         List<Task> tasks = query.listPage(pageQuery.getOffset(), pageQuery.getPageSize());
         long count = query.count();
-        
         List<FlowTaskVo> list = tasks.stream().map(this::convertTaskToVo).collect(Collectors.toList());
         return new TableDataInfo<>(list, count);
     }
@@ -124,13 +106,9 @@ public class FlowableProcessServiceImpl implements IFlowableProcessService {
     public TableDataInfo<FlowTaskVo> selectCompletedTaskPage(String userId, PageQuery pageQuery) {
         var historyService = processEngine.getHistoryService();
         HistoricTaskInstanceQuery query = historyService.createHistoricTaskInstanceQuery()
-            .taskAssignee(userId)
-            .finished()
-            .orderByHistoricTaskInstanceEndTime().desc();
-        
+            .taskAssignee(userId).finished().orderByHistoricTaskInstanceEndTime().desc();
         List<HistoricTaskInstance> tasks = query.listPage(pageQuery.getOffset(), pageQuery.getPageSize());
         long count = query.count();
-        
         List<FlowTaskVo> list = tasks.stream().map(this::convertHisTaskToVo).collect(Collectors.toList());
         return new TableDataInfo<>(list, count);
     }
@@ -138,11 +116,7 @@ public class FlowableProcessServiceImpl implements IFlowableProcessService {
     @Override
     public ProcessInstance startProcessInstance(StartProcessBo bo) {
         var runtimeService = processEngine.getRuntimeService();
-        return runtimeService.startProcessInstanceByKey(
-            bo.getProcessDefinitionKey(),
-            bo.getBusinessKey(),
-            bo.getVariables()
-        );
+        return runtimeService.startProcessInstanceByKey(bo.getProcessDefinitionKey(), bo.getBusinessKey(), bo.getVariables());
     }
 
     @Override
@@ -162,25 +136,12 @@ public class FlowableProcessServiceImpl implements IFlowableProcessService {
     }
 
     @Override
-    public void delegateTask(String taskId, String assignee) {
-        var taskService = processEngine.getTaskService();
-        taskService.delegateTask(taskId, assignee);
-    }
-
-    @Override
     public byte[] getProcessDiagram(String processInstanceId) {
         var runtimeService = processEngine.getRuntimeService();
         var repositoryService = processEngine.getRepositoryService();
-        
-        ProcessInstance pi = runtimeService.createProcessInstanceQuery()
-            .processInstanceId(processInstanceId).singleResult();
-        
-        if (pi == null) {
-            return null;
-        }
-        
-        String processDefinitionId = pi.getProcessDefinitionId();
-        return repositoryService.getProcessDiagram(processDefinitionId);
+        ProcessInstance pi = runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult();
+        if (pi == null) return null;
+        return repositoryService.getProcessDiagram(pi.getProcessDefinitionId());
     }
 
     private FlowProcessDefinitionVo convertToVo(ProcessDefinition pd) {
@@ -194,8 +155,7 @@ public class FlowableProcessServiceImpl implements IFlowableProcessService {
         vo.setDiagramResourceName(pd.getDiagramResourceName());
         vo.setDescription(pd.getDescription());
         vo.setCategory(pd.getCategory());
-        vo.setIsSuspended(pd.isSuspended());
-        
+        vo.setSuspended(pd.isSuspended());
         if (StringUtils.isNotBlank(pd.getDeploymentId())) {
             Deployment deployment = processEngine.getRepositoryService().getDeployment(pd.getDeploymentId());
             if (deployment != null) {

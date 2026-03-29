@@ -33,11 +33,6 @@
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-security</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>org.jimureport</groupId>
-            <artifactId>jimureport-spring-boot-starter</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

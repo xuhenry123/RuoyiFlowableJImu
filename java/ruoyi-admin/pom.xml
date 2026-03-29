@@ -93,7 +93,7 @@
             <artifactId>ruoyi-workflow</artifactId>
         </dependency>
 
-        <!-- Flowable 工作流模块 -->
+        <!-- Flowable工作流模块 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-flowable</artifactId>

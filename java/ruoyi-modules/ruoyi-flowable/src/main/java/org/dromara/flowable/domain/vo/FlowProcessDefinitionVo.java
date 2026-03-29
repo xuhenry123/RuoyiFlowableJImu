@@ -1,7 +1,6 @@
 package org.dromara.flowable.domain.vo;
 
 import lombok.Data;
-
 import java.util.Date;
 
 @Data
@@ -15,6 +14,6 @@ public class FlowProcessDefinitionVo {
     private String diagramResourceName;
     private String description;
     private Date deploymentTime;
-    private Boolean isSuspended;
+    private Boolean suspended;
     private String category;
 }

@@ -70,22 +70,13 @@
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-security</artifactId>
         </dependency>
-        <!-- Flowable 工作流引擎 -->
         <dependency>
-            <groupId>org.flowable</groupId>
-            <artifactId>flowable-spring-boot-starter</artifactId>
+            <groupId>org.dromara.warm</groupId>
+            <artifactId>warm-flow-mybatis-plus-sb3-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.flowable</groupId>
-            <artifactId>flowable-spring-boot-starter-rest</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.flowable</groupId>
-            <artifactId>flowable-idm-spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.flowable</groupId>
-            <artifactId>flowable-ui-modeler-rest</artifactId>
+            <groupId>org.dromara.warm</groupId>
+            <artifactId>warm-flow-plugin-ui-sb-web</artifactId>
         </dependency>
     </dependencies>
 

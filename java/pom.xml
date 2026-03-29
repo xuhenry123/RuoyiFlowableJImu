@@ -47,14 +47,9 @@
         <fastjson.version>1.2.83</fastjson.version>
         <!-- 面向运行时的D-ORM依赖 -->
         <anyline.version>8.7.3-20251210</anyline.version>
-        <!-- Flowable 工作流引擎 -->
-        <flowable.version>6.8.0</flowable.version>
-
-        <!-- 积木报表 JimuReport -->
-        <jimureport.version>1.9.0</jimureport.version>
-
         <!-- 工作流配置 -->
         <warm-flow.version>1.8.4</warm-flow.version>
+        <flowable.version>6.8.0</flowable.version>
 
         <!-- 插件版本 -->
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
@@ -300,30 +295,6 @@
                 <version>${mapstruct-plus.version}</version>
             </dependency>
 
-            <!-- Flowable 工作流引擎 -->
-            <dependency>
-                <groupId>org.flowable</groupId>
-                <artifactId>flowable-spring-boot-starter</artifactId>
-                <version>${flowable.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.flowable</groupId>
-                <artifactId>flowable-ui-modeler-rest</artifactId>
-                <version>${flowable.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.flowable</groupId>
-                <artifactId>flowable-ui-identitylink-rest</artifactId>
-                <version>${flowable.version}</version>
-            </dependency>
-
-            <!-- 积木报表 JimuReport -->
-            <dependency>
-                <groupId>org.jimureport</groupId>
-                <artifactId>jimureport-spring-boot-starter</artifactId>
-                <version>${jimureport.version}</version>
-            </dependency>
-
             <!-- Warm-Flow国产工作流引擎, 在线文档：http://warm-flow.cn/ -->
             <dependency>
                 <groupId>org.dromara.warm</groupId>
@@ -334,6 +305,23 @@
                 <groupId>org.dromara.warm</groupId>
                 <artifactId>warm-flow-plugin-ui-sb-web</artifactId>
                 <version>${warm-flow.version}</version>
+            </dependency>
+
+            <!-- Flowable工作流引擎 -->
+            <dependency>
+                <groupId>org.flowable</groupId>
+                <artifactId>flowable-spring-boot-starter</artifactId>
+                <version>${flowable.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flowable</groupId>
+                <artifactId>flowable-idm-spring-boot-starter</artifactId>
+                <version>${flowable.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flowable</groupId>
+                <artifactId>flowable-spring-boot-starter-rest</artifactId>
+                <version>${flowable.version}</version>
             </dependency>
 
             <!-- JustAuth 的依赖配置-->
@@ -387,7 +375,7 @@
                 <version>${revision}</version>
             </dependency>
 
-            <!-- Flowable 工作流模块 -->
+            <!-- Flowable工作流模块 -->
             <dependency>
                 <groupId>org.dromara</groupId>
                 <artifactId>ruoyi-flowable</artifactId>

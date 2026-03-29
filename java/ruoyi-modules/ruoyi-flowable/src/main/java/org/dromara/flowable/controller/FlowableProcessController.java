@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 
 @RestController
@@ -29,9 +28,7 @@ public class FlowableProcessController {
     private final IFlowableProcessService flowableProcessService;
 
     @GetMapping("/definition/list")
-    public TableDataInfo<FlowProcessDefinitionVo> list(
-        @RequestParam(required = false) String category,
-        PageQuery pageQuery) {
+    public TableDataInfo<FlowProcessDefinitionVo> list(@RequestParam(required = false) String category, PageQuery pageQuery) {
         return flowableProcessService.selectProcessDefinitionPage(category, pageQuery);
     }
 
@@ -42,11 +39,8 @@ public class FlowableProcessController {
 
     @Log(title = "流程定义", businessType = BusinessType.IMPORT)
     @PostMapping("/definition/deploy")
-    public R<String> deploy(@RequestParam("file") MultipartFile file,
-        @RequestParam(required = false, defaultValue = "") String name) {
-        if (file.isEmpty()) {
-            return R.fail("上传文件不能为空");
-        }
+    public R<String> deploy(@RequestParam("file") MultipartFile file, @RequestParam(required = false, defaultValue = "") String name) {
+        if (file.isEmpty()) return R.fail("上传文件不能为空");
         String fileName = file.getOriginalFilename();
         if (!fileName.endsWith(".bpmn20.xml") && !fileName.endsWith(".bpmn") && !fileName.endsWith(".zip")) {
             return R.fail("请上传 BPMN 文件");
@@ -84,9 +78,7 @@ public class FlowableProcessController {
 
     @Log(title = "流程任务", businessType = BusinessType.UPDATE)
     @PostMapping("/task/complete")
-    public R<Void> complete(@RequestParam String taskId,
-        @RequestParam(required = false) String userId,
-        @RequestBody(required = false) Map<String, Object> variables) {
+    public R<Void> complete(@RequestParam String taskId, @RequestParam(required = false) String userId, @RequestBody(required = false) Map<String, Object> variables) {
         flowableProcessService.completeTask(taskId, userId, variables);
         return R.ok();
     }
@@ -95,13 +87,6 @@ public class FlowableProcessController {
     @PostMapping("/task/claim")
     public R<Void> claim(@RequestParam String taskId, @RequestParam String userId) {
         flowableProcessService.claimTask(taskId, userId);
-        return R.ok();
-    }
-
-    @Log(title = "流程任务", businessType = BusinessType.UPDATE)
-    @PostMapping("/task/delegate")
-    public R<Void> delegate(@RequestParam String taskId, @RequestParam String assignee) {
-        flowableProcessService.delegateTask(taskId, assignee);
         return R.ok();
     }
 

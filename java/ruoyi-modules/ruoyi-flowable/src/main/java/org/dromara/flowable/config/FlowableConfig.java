@@ -1,8 +1,6 @@
 package org.dromara.flowable.config;
 
 import org.flowable.engine.ProcessEngine;
-import org.flowable.engine.ProcessEngineConfiguration;
-import org.flowable.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.flowable.spring.ProcessEngineFactoryBean;
 import org.flowable.spring.SpringProcessEngineConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +20,6 @@ public class FlowableConfig {
         config.setDatabaseSchemaUpdate("true");
         config.setAsyncExecutorActivate(true);
         config.setHistory("full");
-        config.setEnableDatabaseEventLogging(false);
         return config;
     }
 
@@ -51,20 +48,5 @@ public class FlowableConfig {
     @Bean
     public org.flowable.engine.HistoryService historyService(ProcessEngine processEngine) {
         return processEngine.getHistoryService();
-    }
-
-    @Bean
-    public org.flowable.engine.FormService formService(ProcessEngine processEngine) {
-        return processEngine.getFormService();
-    }
-
-    @Bean
-    public org.flowable.engine.ManagementService managementService(ProcessEngine processEngine) {
-        return processEngine.getManagementService();
-    }
-
-    @Bean
-    public org.flowable.engine.DynamicBpmnService dynamicBpmnService(ProcessEngine processEngine) {
-        return processEngine.getDynamicBpmnService();
     }
 }

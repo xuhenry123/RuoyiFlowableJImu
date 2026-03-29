@@ -1,7 +1,6 @@
 package org.dromara.flowable.domain.bo;
 
 import lombok.Data;
-
 import java.util.Map;
 
 @Data

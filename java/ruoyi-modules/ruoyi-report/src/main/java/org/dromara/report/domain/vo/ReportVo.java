@@ -1,7 +1,6 @@
 package org.dromara.report.domain.vo;
 
 import lombok.Data;
-
 import java.util.Date;
 
 @Data
@@ -11,6 +10,7 @@ public class ReportVo {
     private String name;
     private String type;
     private String status;
+    private String description;
     private String createBy;
     private Date createTime;
     private String updateBy;
