@@ -324,9 +324,32 @@ const handleNew = () => {
   }).catch(() => {})
 }
 
+const checkBackendConnection = async () => {
+  try {
+    const response = await fetch('/flowable/process/definition/list', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    return response.ok
+  } catch (error) {
+    return false
+  }
+}
+
 const handleSave = async () => {
+  const isConnected = await checkBackendConnection()
+  
   try {
     const { xml } = await bpmnModeler.saveXML({ format: true })
+    
+    if (!isConnected) {
+      localStorage.setItem('bpmn_xml_backup', xml)
+      localStorage.setItem('bpmn_xml_backup_time', new Date().toISOString())
+      localStorage.setItem('bpmn_xml', xml)
+      localStorage.setItem('bpmn_process_key', processKey.value)
+      ElMessage.warning('后端服务未连接，流程已暂存到本地存储')
+      return
+    }
     
     const response = await deployXml(xml, processName.value)
     
@@ -345,11 +368,22 @@ const handleSave = async () => {
 }
 
 const handleDeploy = async () => {
+  if (!processKey.value) {
+    ElMessage.warning('请先设置流程Key')
+    return
+  }
+  
+  const isConnected = await checkBackendConnection()
+  
   try {
     const { xml } = await bpmnModeler.saveXML({ format: true })
     
-    if (!processKey.value) {
-      ElMessage.warning('请先设置流程Key')
+    if (!isConnected) {
+      localStorage.setItem('bpmn_xml_backup', xml)
+      localStorage.setItem('bpmn_xml_backup_time', new Date().toISOString())
+      localStorage.setItem('bpmn_xml', xml)
+      localStorage.setItem('bpmn_process_key', processKey.value)
+      ElMessage.warning('后端服务未连接，流程XML已暂存到本地存储，请启动后端服务后重试')
       return
     }
     
