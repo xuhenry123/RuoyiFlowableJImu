@@ -119,12 +119,12 @@ const router = useRouter()
 const store = useStore()
 
 const isCollapse = ref(false)
-const user = computed(() => store.state.user)
+const user = computed(() => store.user)
 const activeMenu = computed(() => route.path)
 
 onMounted(() => {
-  if (store.state.token) {
-    store.dispatch('user/getInfo')
+  if (store.token) {
+    store.getInfo()
   }
 })
 
@@ -134,7 +134,7 @@ const toggleCollapse = () => {
 
 const handleCommand = (command) => {
   if (command === 'logout') {
-    store.dispatch('user/logout')
+    store.logout()
     router.push('/login')
     ElMessage.success('退出登录成功')
   }

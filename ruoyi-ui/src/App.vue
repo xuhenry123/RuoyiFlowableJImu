@@ -3,16 +3,6 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
-import { useStore } from '@/store'
-
-const store = useStore()
-
-onMounted(() => {
-  if (store.state.token) {
-    store.dispatch('user/getInfo')
-  }
-})
 </script>
 
 <style>

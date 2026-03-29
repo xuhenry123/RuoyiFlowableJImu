@@ -103,8 +103,8 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    store.dispatch('user/setToken', 'mock-token-' + Date.now())
-    store.dispatch('user/setUser', { userName: form.username, nickName: '管理员' })
+    store.setToken('mock-token-' + Date.now())
+    store.setUser({ userName: form.username, nickName: '管理员' })
     ElMessage.success('登录成功')
     router.push('/')
   } catch (error) {
