@@ -194,13 +194,34 @@ const initBpmn = async () => {
     keyboard: { bindTo: document }
   })
 
+  const savedXml = localStorage.getItem('bpmn_xml')
+  const savedKey = localStorage.getItem('bpmn_process_key')
+  
+  if (savedXml && savedXml.length > 100) {
+    try {
+      await bpmnModeler.importXML(savedXml)
+      if (savedKey) {
+        processKey.value = savedKey
+      }
+      ElMessage.success('已恢复之前保存的流程')
+    } catch (err) {
+      console.error('Failed to load saved BPMN:', err)
+      await bpmnModeler.importXML(createNewXml())
+    }
+  } else {
+    try {
+      await bpmnModeler.importXML(createNewXml())
+    } catch (err) {
+      console.error('Failed to import BPMN:', err)
+      ElMessage.error('流程图初始化失败')
+    }
+  }
+  
   try {
-    await bpmnModeler.importXML(createNewXml())
     const canvas = bpmnModeler.get('canvas')
     canvas.zoom('fit-viewport')
   } catch (err) {
-    console.error('Failed to import BPMN:', err)
-    ElMessage.error('流程图初始化失败')
+    console.error('Failed to zoom:', err)
   }
 
   bpmnModeler.on('selection.changed', (event) => {
@@ -313,12 +334,20 @@ const handleNew = () => {
     processCategory.value = 'OFFICE'
     selectedElement.value = null
     
+    localStorage.removeItem('bpmn_xml')
+    localStorage.removeItem('bpmn_xml_backup')
+    localStorage.removeItem('bpmn_xml_time')
+    localStorage.removeItem('bpmn_process_key')
+    localStorage.removeItem('bpmn_process_name')
+    localStorage.removeItem('bpmn_deployment_id')
+    
     try {
       await bpmnModeler.importXML(createNewXml())
       const canvas = bpmnModeler.get('canvas')
       canvas.zoom('fit-viewport')
       ElMessage.success('已创建新流程')
     } catch (err) {
+      console.error('Create new BPMN error:', err)
       ElMessage.error('创建失败: ' + err.message)
     }
   }).catch(() => {})
@@ -337,29 +366,33 @@ const checkBackendConnection = async () => {
 }
 
 const handleSave = async () => {
-  const isConnected = await checkBackendConnection()
-  
   try {
     const { xml } = await bpmnModeler.saveXML({ format: true })
     
+    localStorage.setItem('bpmn_xml', xml)
+    localStorage.setItem('bpmn_xml_time', new Date().toISOString())
+    localStorage.setItem('bpmn_process_key', processKey.value)
+    localStorage.setItem('bpmn_process_name', processName.value)
+    
+    const isConnected = await checkBackendConnection()
+    
     if (!isConnected) {
-      localStorage.setItem('bpmn_xml_backup', xml)
-      localStorage.setItem('bpmn_xml_backup_time', new Date().toISOString())
-      localStorage.setItem('bpmn_xml', xml)
-      localStorage.setItem('bpmn_process_key', processKey.value)
-      ElMessage.warning('后端服务未连接，流程已暂存到本地存储')
+      ElMessage.success('流程已保存到本地存储（后端服务未连接）')
       return
     }
     
-    const response = await deployXml(xml, processName.value)
-    
-    if (response.code === 200 || response.code === 0) {
-      localStorage.setItem('bpmn_xml', xml)
-      localStorage.setItem('bpmn_process_key', processKey.value)
-      localStorage.setItem('bpmn_deployment_id', response.data)
-      ElMessage.success('流程保存成功')
-    } else {
-      ElMessage.error(response.msg || '保存失败')
+    try {
+      const response = await deployXml(xml, processName.value)
+      
+      if (response.code === 200 || response.code === 0) {
+        localStorage.setItem('bpmn_deployment_id', response.data)
+        ElMessage.success('流程保存成功（已同步到服务器）')
+      } else {
+        ElMessage.warning('流程已保存到本地，服务器同步失败')
+      }
+    } catch (err) {
+      console.error('Deploy to server error:', err)
+      ElMessage.warning('流程已保存到本地，服务器同步失败')
     }
   } catch (err) {
     console.error('Save error:', err)
@@ -373,29 +406,33 @@ const handleDeploy = async () => {
     return
   }
   
-  const isConnected = await checkBackendConnection()
-  
   try {
     const { xml } = await bpmnModeler.saveXML({ format: true })
     
+    localStorage.setItem('bpmn_xml', xml)
+    localStorage.setItem('bpmn_xml_time', new Date().toISOString())
+    localStorage.setItem('bpmn_process_key', processKey.value)
+    localStorage.setItem('bpmn_process_name', processName.value)
+    
+    const isConnected = await checkBackendConnection()
+    
     if (!isConnected) {
-      localStorage.setItem('bpmn_xml_backup', xml)
-      localStorage.setItem('bpmn_xml_backup_time', new Date().toISOString())
-      localStorage.setItem('bpmn_xml', xml)
-      localStorage.setItem('bpmn_process_key', processKey.value)
-      ElMessage.warning('后端服务未连接，流程XML已暂存到本地存储，请启动后端服务后重试')
+      ElMessage.success('流程已保存到本地存储（后端服务未连接）')
       return
     }
     
-    const response = await deployXml(xml, processName.value)
-    
-    if (response.code === 200 || response.code === 0) {
-      localStorage.setItem('bpmn_xml', xml)
-      localStorage.setItem('bpmn_process_key', processKey.value)
-      localStorage.setItem('bpmn_deployment_id', response.data)
-      ElMessage.success('流程部署成功！可通过"流程定义"页面查看')
-    } else {
-      ElMessage.error(response.msg || '部署失败')
+    try {
+      const response = await deployXml(xml, processName.value)
+      
+      if (response.code === 200 || response.code === 0) {
+        localStorage.setItem('bpmn_deployment_id', response.data)
+        ElMessage.success('流程部署成功！可通过"流程定义"页面查看')
+      } else {
+        ElMessage.warning('流程已保存到本地，服务器部署失败')
+      }
+    } catch (err) {
+      console.error('Deploy to server error:', err)
+      ElMessage.warning('流程已保存到本地，服务器部署失败')
     }
   } catch (err) {
     console.error('Deploy error:', err)
