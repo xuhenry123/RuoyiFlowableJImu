@@ -44,3 +44,10 @@ export function getPreviewUrl(id) {
     method: 'get'
   })
 }
+
+export function getReportData(id) {
+  return request({
+    url: `/report/datas/${id}`,
+    method: 'get'
+  })
+}

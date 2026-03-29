@@ -11,6 +11,7 @@ public class ReportVo {
     private String type;
     private String status;
     private String description;
+    private String config;
     private String createBy;
     private Date createTime;
     private String updateBy;
