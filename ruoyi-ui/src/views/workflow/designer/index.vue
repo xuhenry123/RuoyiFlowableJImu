@@ -467,11 +467,13 @@ onUnmounted(() => {
   flex: 1;
   background: #f5f7fa;
   overflow: hidden;
+  height: 600px;
 }
 
 #bpmn-canvas {
   width: 100%;
   height: 100%;
+  min-height: 600px;
 }
 
 .properties-panel {
