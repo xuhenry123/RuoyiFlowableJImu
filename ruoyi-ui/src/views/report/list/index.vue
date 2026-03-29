@@ -202,7 +202,7 @@
                   </el-select>
                 </el-form-item>
                 <el-form-item v-if="selectedWidget.type === 'line' || selectedWidget.type === 'bar'" label="图表标题">
-                  <el-input v-model="selectedWidget.config?.title" placeholder="图表标题" />
+                  <el-input v-model="selectedWidget.config.title" placeholder="图表标题" />
                 </el-form-item>
                 <el-form-item v-if="selectedWidget.type === 'line' || selectedWidget.type === 'bar'" label="数据字段">
                   <el-input v-model="selectedWidget.dataField" placeholder="数据字段" />
